@@ -3,60 +3,37 @@ use std::collections::HashMap;
 /// Word Break II
 /// https://leetcode.com/problems/word-break-ii/description/
 pub fn word_break(s: String, word_dict: Vec<String>) -> Vec<String> {
-    let mut result: Vec<String> = Vec::new();
-    let mut result_cache: Vec<String> = Vec::new();
-    let mut words_processed: Vec<String> = Vec::new();
-    let mut word_dict_cache: Vec<String> = word_dict.clone();
+    // Map to store results of subproblems
+    let mut dp: HashMap<usize, Vec<String>> = HashMap::new();
 
-    loop {
-        let mut input_str: String = s.clone();
-        let mut temp_cache: Vec<String> = Vec::new();
-        let mut word_index: HashMap<usize, &String> = HashMap::new();
+    // Iterate from the end of the string to the beginning
+    for start_idx in (0..s.len()).rev() {
+        // List to store valid sentences starting from start_idx
+        let mut valid_sentences: Vec<String> = vec![];
 
-        for word in word_dict_cache.iter() {
-            let indices: Vec<usize> = input_str.match_indices(word).map(|(i, _)|i).collect();
+        // Iterate from start_idx to the end of the string
+        for end_idx in start_idx..s.len() {
+            // Extract substring from start_idx to end_idx
+            let current_word: String = s[start_idx..end_idx+1].to_string();
 
-            if indices.len() > 0 {
-                for idx in indices {
-                    word_index.insert(idx, word);
+            // Check if the current substring is a valid word
+            if word_dict.contains(&current_word) {
+                // If it's the last word, add it as a valid sentence
+                if end_idx == s.len() - 1 {
+                    valid_sentences.push(current_word);
+                } else {
+                    // If it's not the last word, append it to each sentence formed by the remaining substring
+                    for sentence in dp.get(&(end_idx+1)).unwrap() {
+                        valid_sentences.push(format!("{} {}", current_word, sentence));
+                    }
                 }
-                input_str = input_str.replace(word, "_".repeat(word.len()).as_str());
-                //println!("{} - {:?} - {}", word, word_index, input_str);
-
-                if !words_processed.contains(word) {
-                    words_processed.push(word.to_owned());
-                }
-            } else {
-                temp_cache.push(word.to_owned());
             }
         }
-
-        let remaining_str: String = input_str.replace("_", "");
-        if remaining_str.len() == 0 {
-            let mut temp_vec: Vec<&str> = Vec::new();
-            let mut keys: Vec<&usize> = word_index.keys().collect();
-            keys.sort();
-            for key in keys.iter() {
-                temp_vec.push(word_index.get(key).unwrap().as_str());
-            }
-            let result_str: String = temp_vec.join(" ");
-            if !result.contains(&result_str) {
-                result.push(result_str);
-            }
-        }
-
-        temp_cache.extend(words_processed.clone());
-        word_dict_cache = temp_cache.clone();
-        //println!("Result: {:?} | Result Cache: {:?}", result, result_cache);
-
-        if (words_processed.len() == 0) | ((result.len() > 0) & (result == result_cache)) {
-            break;
-        }
-        
-        result_cache = result.clone();
-        //break;
+        // Store the valid sentences in dp
+        dp.insert(start_idx, valid_sentences);
     }
-    result
+    // Return the sentences formed from the entire string
+    return dp.get(&0).unwrap().to_vec();
 }
 
 pub fn main() {
@@ -84,7 +61,7 @@ pub fn main() {
         "bbbb".to_string()
     ];
     println!("Test Case 3: {:?}", word_break(s, word_dict));
-
+    
     let s: String = "catsanddog".to_string();
     let word_dict: Vec<String> = vec![
         "cat".to_string(),
